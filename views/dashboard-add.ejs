@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=PT+Sans:ital@0;1&family=Sansita:ital,wght@0,400;0,700;0,800;1,800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/dashboard-add.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <%- include('components/navbar') %>
+    <div class="hero">
+      <div class="content">
+        <h1>Dashboard</h1>
+        <p>
+          Selamat, anda telah memulai langkah awal untuk berkontribusi menjaga
+          lingkungan dengan mendukung program jagatirta
+        </p>
+      </div>
+    </div>
+    <div class="main">
+      <h2>tambah data sumber air</h2>
+      <form action="/add/place" method="POST" enctype="multipart/form-data">
+        <div class="file-zone">
+          <p class="uplace">Drop file here or click to upload</p>
+          <input type="file" name="photo" id="photo" />
+        </div>
+
+        <label for="title">Nama tempat</label>
+        <input type="text" id="title" name="title" required />
+        <input type="hidden" name="slug" id="slug" />
+        <input type="hidden" name="date" value="<%= new Date().getTime(); %>" />
+        <input type="hidden" name="email" value="<%= email %>" />
+        <input type="hidden" name="username" value="<%= name %>" />
+        <input type="hidden" name="render" value="dashboard-add" />
+        <input type="hidden" name="nom" value="mps" />
+        <label>lokasi tempat</label>
+        <div class="row">
+          <div class="provinsi">
+            <label for="provinsi">Provinsi</label>
+            <select id="provinsi" name="provinsi" required></select>
+          </div>
+          <div class="kabupaten">
+            <label for="kabupaten">kabupaten</label>
+            <select id="kabupaten" name="kabupaten" required></select>
+          </div>
+        </div>
+        <label>kondisi tempat</label>
+        <div class="row">
+          <div class="fungsi">
+            <label for="fungsi">jenis tempat</label>
+            <select id="fungsi" name="fungsi" required>
+              <option value="1">sungai</option>
+              <option value="2">danau</option>
+              <option value="3">telaga</option>
+              <option value="4">air terjun</option>
+              <option value="5">pantai</option>
+              <option value="6">kali</option>
+              <option value="7">irigasi</option>
+            </select>
+          </div>
+          <div class="lingkungan">
+            <label for="lingkungan">kebersihan</label>
+            <select id="lingkungan" name="lingkungan" required>
+              <option value="1">semua bersih</option>
+              <option value="2">hanya air yang bersih</option>
+              <option value="3">tercemar sampah</option>
+              <option value="4">tercemar limbah pabrik</option>
+            </select>
+          </div>
+        </div>
+        <label for="deskripsi">deskripsi singkat</label>
+        <textarea name="deskripsi" id="deskripsi"></textarea>
+        <label for="notel">Nomor telepon</label>
+        <input type="text" id="notel" name="notel" />
+        <label for="link">link google maps</label>
+        <input type="text" id="link" name="link" required />
+        <button type="submit">tambah</button>
+      </form>
+    </div>
+    <%- include('components/footer') %>
+    <script src="/js/navbar.js"></script>
+    <script src="/js/slug.js"></script>
+    <script src="/js/select.js"></script>
+    <script src="/js/drag.js"></script>
+  </body>
+</html>
