@@ -136,14 +136,95 @@ app.get("/class/detail/:id", async (req, res) => {
     }
   );
 });
-app.get("/dashboard", (req, res) => {
-  if (req.session.isLogin == true) {
-    res.render("dashboard", { name: req.session.name });
+app.get("/class/join/:classid", async (req, res) => {
+  if (req.session.isLogin) {
+    console.log(req.params.classid);
+    console.log(req.session.joined);
+    console.log(req.session.joined.includes(+req.params.classid));
+    if (!req.session.joined.includes(req.params.classid)) {
+      console.log("jjkk");
+      // const query = `INSERT INTO student (userId, name, email, classId) VALUES (?, ?, ?, ?)`;
+      // await db.query(
+      //   query,
+      //   [
+      //     req.session.userId,
+      //     req.session.name,
+      //     req.session.email,
+      //     req.params.classid,
+      //   ],
+      //   (error, results) => {
+      //     if (error) {
+      //       console.error("Error inserting data:", error.message);
+      //       return;
+      //     }
+      //     console.log("Data inserted successfully with ID:", results.insertId);
+      //     res.redirect(`/class/lesson/${req.params.classid}/1`);
+      //   }
+      // );
+    } else {
+      res.redirect(`/class/lesson/${req.params.classid}/1`);
+    }
   } else {
     res.redirect("/login");
   }
 });
-app.get("/dashboard/add", (req, res) => {
+app.get("/class/lesson/:classid/:lessonid", async (req, res) => {
+  await db.query(
+    `SELECT * FROM lesson WHERE classId = ${req.params.classid} AND lessonId = ${req.params.lessonid} `,
+    async (err, resu, field) => {
+      if (err || resu.length == 0) {
+        res.redirect("/");
+      } else {
+        const responsetxt = await fetch(
+          "http://localhost:3024" + resu[0].material
+        );
+        const bodytxt = await responsetxt.text();
+
+        res.render("class-lesson.ejs", {
+          data: resu[0],
+          body: bodytxt,
+        });
+      }
+    }
+  );
+});
+const runQuery = (query, params) => {
+  return new Promise((resolve, reject) => {
+    db.query(query, params, (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+};
+
+app.get("/dashboard", async (req, res) => {
+  if (req.session.isLogin == true) {
+    try {
+      console.log(req.session);
+
+      // Query database menggunakan Promise
+      const resu = await runQuery(`SELECT * FROM user WHERE email = ?`, [
+        req.session.email,
+      ]);
+      req.session.userId = resu[0].id;
+      const resu2 = await runQuery(`SELECT * FROM student WHERE email = ?`, [
+        req.session.email,
+      ]);
+      req.session.joined =
+        resu2.length > 0 ? resu2.map((row) => row.classId) : [];
+
+      // Render dashboard
+      res.render("dashboard", { name: req.session.name });
+    } catch (err) {
+      console.error(err);
+      res.redirect("/login");
+    }
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get("/dashboard/add", async (req, res) => {
   if (req.session.isLogin == true) {
     res.render("dashboard-add", {
       name: req.session.name,
@@ -252,9 +333,10 @@ app.get("/sensei/dashboard/add-class", (req, res) => {
     user: req.session.user,
   });
 });
-app.get("/sensei/dashboard/add-lesson", (req, res) => {
+app.get("/sensei/dashboard/:classid/add-lesson", (req, res) => {
   res.render("sensei/add-lesson.ejs", {
     user: req.session.user,
+    classid: req.params.classid,
   });
 });
 app.get("/sensei/dashboard/all-class", async (req, res) => {
@@ -283,6 +365,42 @@ app.post("/sensei/dashboard/add-class", storehtml, upload, (req, res) => {
     }
   });
 });
+app.post(
+  "/sensei/dashboard/:classid/add-lesson",
+  storehtml,
+  upload,
+  (req, res) => {
+    const { title, thumb, youtube, quiz, quil } = req.body;
+
+    // Query untuk insert data
+    const query = `
+        INSERT INTO lesson (classId,className, title, thumbnail, youtubeUrl, quiz, material)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      req.params.classid,
+      "ii",
+      title,
+      thumb,
+      youtube,
+      quiz,
+      quil,
+    ];
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res.status(500).json({ error: "Failed to insert data" });
+      } else {
+        res.render("sensei/add-lesson.ejs", {
+          classid: req.params.classid,
+          user: req.session.user,
+        });
+      }
+    });
+  }
+);
 app.get("/master/login", (req, res) => {
   res.render("master/login.ejs");
 });

@@ -36,7 +36,7 @@
     <div class="main">
       <h2>tambah kelas baru</h2>
       <form
-        action="/sensei/dashboard/add-class"
+        action="/sensei/dashboard/<%= classid %>/add-lesson"
         method="POST"
         enctype="multipart/form-data"
       >
@@ -45,9 +45,10 @@
         <% Object.entries(user).forEach(([key, value]) => { %>
         <input type="hidden" name="<%= key %>" value="<%= value %>" />
         <% }); %>
+        <input type="hidden" name="youtube" />
         <input type="hidden" name="myquil" id="myquil" />
-        <input type="hidden" name="render" value="sensei/add-class" />
-        <input type="hidden" name="nom" value="cls" />
+        <input type="hidden" name="render" value="sensei/add-lesson" />
+        <input type="hidden" name="nom" value="lsn" />
         <label for="title">Judul Materi</label>
         <input type="text" id="title" name="title" required />
 
@@ -63,7 +64,7 @@
           </div>
           <div>
             <iframe
-              src="https://www.youtube.com/embed/JQ9ePv9GkwY?si=B6JvWjoaD-0uLBO8"
+              src="https://www.youtube.com/embed/3nQNiWdeH2Q?si=EYQDVZ2SpJT--n3l"
               title="YouTube video player"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -123,6 +124,34 @@
       // document.getElementById("submit").onclick = () => {
       //   document.getElementById("res").value = `${quill.root.innerHTML}`;
       // };
+      function convertToEmbedLink(url) {
+        const urlPattern =
+          /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be|be\.com)\/(?:watch\?v=|embed\/|v\/|.+\?v=)?([^&\s?]+)/;
+        const match = url.match(urlPattern);
+
+        if (match && match[1]) {
+          const videoId = match[1];
+          return `https://www.youtube.com/embed/${videoId}`;
+        } else {
+          return "https://www.youtube.com/embed/3nQNiWdeH2Q?si=EYQDVZ2SpJT--n3l";
+        }
+      }
+      // document.querySelector("input#video")((e) => {
+
+      // });
+      // console.log();
+      const videoInput = document.querySelector("input#video");
+      if (videoInput) {
+        videoInput.addEventListener("input", function (event) {
+          document
+            .querySelector("iframe")
+            .setAttribute("src", convertToEmbedLink(videoInput.value));
+          document.querySelector("input[name='youtube']").value =
+            convertToEmbedLink(videoInput.value);
+        });
+      } else {
+        console.error("Input with ID 'video' not found.");
+      }
     </script>
   </body>
 </html>
