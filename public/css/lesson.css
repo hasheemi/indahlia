@@ -142,4 +142,11 @@ button {
     width: 100%;
     box-sizing: border-box;
   }
+  .thumbnail {
+    bottom: -40px;
+    width: 90%;
+  }
+  .content {
+    margin-top: 5px;
+  }
 }

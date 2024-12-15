@@ -27,19 +27,24 @@
 
     <div class="container">
       <div class="class-list">
-        <!-- Class Item 1 -->
+        <% list.res.forEach(e => { %>
         <div class="class-item">
           <div class="class-thumbnail">
-            <img src="/img/leaf.jpg" alt="" />
+            <img src="<%= e.thumbnail %>" alt="" />
           </div>
           <div class="class-details">
-            <h3 class="class-title">Kelas Matematika</h3>
+            <h3 class="class-title"><%= e.title %></h3>
             <div class="buttons">
-              <button class="btn btn-add">Tambah Materi</button>
+              <a href="/sensei/dashboard/<%= e.classId %>/add-lesson">
+                <button class="btn btn-add">Tambah Materi</button></a
+              >
               <button class="btn btn-delete">Hapus Kelas</button>
             </div>
           </div>
         </div>
+        <% }) %>
+        <a href="/sensei/dashboard/add-class"><button>Tambah Kelas</button></a>
+        <!-- Class Item 1 -->
 
         <!-- Class Item 2 -->
         <!-- <div class="class-item">

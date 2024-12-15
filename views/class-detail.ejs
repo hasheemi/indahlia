@@ -21,13 +21,24 @@
     <%- include('components/navbar') %>
     <div
       class="header"
-      style="background: url('') center center / cover no-repeat"
+      style="
+        background-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.763),
+            rgba(0, 0, 0, 0.359) 30%,
+            rgba(0, 0, 0, 0.719)
+          ),
+          url('<%= data.thumbnail%>');
+        background-position: center center;
+        background-size: cover;
+        background-repeat: no-repeat;
+      "
     >
       >
       <div class="thumbnail">
         <!-- <img src="/img/danau.jpeg" alt="Thumbnail Kelas" /> -->
 
-        <img src="<%= data.banner %>" alt="Thumbnail Kelas" />
+        <img src="<%= data.thumbnail %>" alt="Thumbnail Kelas" />
       </div>
     </div>
     <div class="content">
@@ -41,15 +52,11 @@
       <div class="info">
         <h3>Step-step/Materi</h3>
         <ul>
+          <% list.forEach(function(item) { %>
           <ol>
-            Materi 1
+            <%= item.title %>
           </ol>
-          <ol>
-            Materi 2
-          </ol>
-          <ol>
-            Materi 3
-          </ol>
+          <% }); %>
           <!-- Tambahkan list materi -->
         </ul>
         <p><strong>Jumlah Peserta:</strong> 123 orang</p>

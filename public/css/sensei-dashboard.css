@@ -12,7 +12,11 @@
   background-position: center;
   position: relative;
 }
-
+button {
+  padding: 20px 40px;
+  background: rgb(62, 53, 190);
+  color: aliceblue;
+}
 .welcome {
   position: absolute;
   font-family: var(--heading-font);

@@ -21,7 +21,7 @@
     <%- include('components/navbar') %>
     <div
       class="header"
-      style="background: url('') center center / cover no-repeat"
+      style="background: url('/img/aloha.jpg') center center / cover no-repeat"
     >
       >
       <div class="thumbnail">
@@ -42,8 +42,12 @@
         <button id="submit-btn">Finish Quiz</button>
         <div id="result"></div>
         <div class="move">
-          <button>Sebelumnya</button>
-          <button>Selanjutnya</button>
+          <a href="/class/lesson/<%= classId %>/<%= +lessonId - 1 %>">
+            <button>Sebelumnya</button></a
+          >
+          <a href="/class/lesson/<%= classId %>/<%= +lessonId + 1 %>">
+            <button>Selanjutnya</button></a
+          >
         </div>
       </div>
       <div class="info">

@@ -22,6 +22,8 @@ const storetext = require("./middlewares/storetext");
 const getCoor = require("./middlewares/coordinat");
 const masterAuth = require("./middlewares/masterAuth");
 const storehtml = require("./middlewares/storehtml");
+const auth = require("./middlewares/auth");
+const currentLesson = require("./middlewares/currentLesson");
 const proxy = createProxyMiddleware({
   router: (req) => new URL(req.path.substring(7)),
   pathRewrite: (path, req) => new URL(req.path.substring(7)).pathname,
@@ -116,6 +118,14 @@ app.get("/maps/place/:id", async (req, res) => {
     }
   );
 });
+app.get("/class/detail/:id/list", async (req, res) => {
+  await db.query(
+    `SELECT * FROM lesson WHERE classId = ${req.params.id}`,
+    (err, resu, field) => {
+      res.json(resu);
+    }
+  );
+});
 app.get("/class/detail/:id", async (req, res) => {
   await db.query(
     `SELECT * FROM class WHERE classId = ${req.params.id}`,
@@ -127,66 +137,78 @@ app.get("/class/detail/:id", async (req, res) => {
           "http://localhost:3024" + resu[0].syllabus
         );
         const bodytxt = await responsetxt.text();
+        const responselist = await fetch(
+          `http://localhost:3024/class/detail/${req.params.id}/list`
+        );
+        const bodylist = await responselist.json();
 
         res.render("class-detail.ejs", {
           data: resu[0],
           body: bodytxt,
+          list: bodylist,
         });
       }
     }
   );
 });
-app.get("/class/join/:classid", async (req, res) => {
-  if (req.session.isLogin) {
-    console.log(req.params.classid);
-    console.log(req.session.joined);
-    console.log(req.session.joined.includes(+req.params.classid));
-    if (!req.session.joined.includes(req.params.classid)) {
-      console.log("jjkk");
-      // const query = `INSERT INTO student (userId, name, email, classId) VALUES (?, ?, ?, ?)`;
-      // await db.query(
-      //   query,
-      //   [
-      //     req.session.userId,
-      //     req.session.name,
-      //     req.session.email,
-      //     req.params.classid,
-      //   ],
-      //   (error, results) => {
-      //     if (error) {
-      //       console.error("Error inserting data:", error.message);
-      //       return;
-      //     }
-      //     console.log("Data inserted successfully with ID:", results.insertId);
-      //     res.redirect(`/class/lesson/${req.params.classid}/1`);
-      //   }
-      // );
-    } else {
-      res.redirect(`/class/lesson/${req.params.classid}/1`);
-    }
+app.get("/class/join/:classid", auth, async (req, res) => {
+  if (!req.session.joined.includes(+req.params.classid)) {
+    const query = `INSERT INTO student (userId, name, email, classId) VALUES (?, ?, ?, ?)`;
+    await db.query(
+      query,
+      [
+        req.session.userId,
+        req.session.name,
+        req.session.email,
+        req.params.classid,
+      ],
+      (error, results) => {
+        if (error) {
+          console.error("Error inserting data:", error.message);
+          res.redirect(`/class/detail/${req.params.classid}`);
+          return;
+        }
+        console.log("Data inserted successfully with ID:", results.insertId);
+        res.redirect(`/class/lesson/${req.params.classid}/1`);
+      }
+    );
   } else {
-    res.redirect("/login");
+    res.redirect(`/class/lesson/${req.params.classid}/1`);
   }
 });
-app.get("/class/lesson/:classid/:lessonid", async (req, res) => {
-  await db.query(
-    `SELECT * FROM lesson WHERE classId = ${req.params.classid} AND lessonId = ${req.params.lessonid} `,
-    async (err, resu, field) => {
-      if (err || resu.length == 0) {
-        res.redirect("/");
-      } else {
-        const responsetxt = await fetch(
-          "http://localhost:3024" + resu[0].material
-        );
-        const bodytxt = await responsetxt.text();
+app.get(
+  "/class/lesson/:classid/:lessonid",
+  auth,
+  currentLesson,
+  async (req, res) => {
+    if (req.session.joined.includes(+req.params.classid)) {
+      await db.query(
+        `SELECT * FROM lesson WHERE classId = ${req.params.classid} AND lessonId = ${req.params.lessonid} `,
+        async (err, resu, field) => {
+          if (err || resu.length == 0) {
+            res.redirect("/");
+          } else {
+            const responsetxt = await fetch(
+              "http://localhost:3024" + resu[0].material
+            );
+            const bodytxt = await responsetxt.text();
 
-        res.render("class-lesson.ejs", {
-          data: resu[0],
-          body: bodytxt,
-        });
-      }
+            res.render("class-lesson.ejs", {
+              data: resu[0],
+              body: bodytxt,
+              classId: req.params.classid,
+              lessonId: req.params.lessonid,
+            });
+          }
+        }
+      );
+    } else {
+      res.redirect(`/class/detail/${req.params.classid}`);
     }
-  );
+  }
+);
+app.get("/class/lesson/:classid/:lessonid/next", (req, res) => {
+  // next gue adem panas
 });
 const runQuery = (query, params) => {
   return new Promise((resolve, reject) => {
@@ -201,8 +223,6 @@ app.get("/dashboard", async (req, res) => {
   if (req.session.isLogin == true) {
     try {
       console.log(req.session);
-
-      // Query database menggunakan Promise
       const resu = await runQuery(`SELECT * FROM user WHERE email = ?`, [
         req.session.email,
       ]);
@@ -212,8 +232,6 @@ app.get("/dashboard", async (req, res) => {
       ]);
       req.session.joined =
         resu2.length > 0 ? resu2.map((row) => row.classId) : [];
-
-      // Render dashboard
       res.render("dashboard", { name: req.session.name });
     } catch (err) {
       console.error(err);
@@ -224,30 +242,22 @@ app.get("/dashboard", async (req, res) => {
   }
 });
 
-app.get("/dashboard/add", async (req, res) => {
-  if (req.session.isLogin == true) {
-    res.render("dashboard-add", {
-      name: req.session.name,
-      email: req.session.email,
-    });
-  } else {
-    res.redirect("/login");
-  }
+app.get("/dashboard/add", auth, async (req, res) => {
+  res.render("dashboard-add", {
+    name: req.session.name,
+    email: req.session.email,
+  });
 });
-app.get("/dashboard/write", (req, res) => {
-  if (req.session.isLogin == true) {
-    res.render("dashboard-write", {
-      name: req.session.name,
-      email: req.session.email,
-    });
-  } else {
-    res.redirect("/login");
-  }
+app.get("/dashboard/write", auth, (req, res) => {
+  res.render("dashboard-write", {
+    name: req.session.name,
+    email: req.session.email,
+  });
 });
 // app.get("/maps", (req, res) => {
 //   res.render("maps");
 // });
-app.post("/add/place", upload, getCoor, async (req, res) => {
+app.post("/add/place", auth, upload, getCoor, async (req, res) => {
   let data = req.body;
   await db.query(
     `INSERT INTO place (userId,nama,deskripsi,prov,kab,jenis,kondisi,notel,link,koordinat,img,timestamp,email) VALUES ("${data.username}","${data.title}","${data.deskripsi}","${data.provinsi}","${data.kabupaten}","${data.fungsi}","${data.lingkungan}","${data.notel}","${data.link}","${data.koordinat}","${data.img}","${data.date}","${data.email}")`,
@@ -261,7 +271,7 @@ app.post("/add/place", upload, getCoor, async (req, res) => {
     }
   );
 });
-app.post("/add/blog", upload, storetext, async (req, res) => {
+app.post("/add/blog", auth, upload, storetext, async (req, res) => {
   let data = req.body;
   await db.query(
     `INSERT INTO blog (userId,judul,slug,isi,img,timestamp,email,cuplikan) VALUES ("${data.username}","${data.title}","${data.slug}","${data.url}","${data.img}","${data.date}","${data.email}","${data.cuplikan}")`,
@@ -299,11 +309,6 @@ app.post("/sensei/login", (req, res) => {
     if (results.length > 0) {
       // res.status(200).json({ message: "Login berhasil.", user: results[0] });
       const { id, name, email } = results[0];
-      // req.session.username = username;
-      // req.session.password = password;
-      // req.session.uid = id;
-      // req.session.name = name;
-      // req.session.email = email;
       req.session.user = {
         uid: id,
         name: name,
@@ -320,15 +325,23 @@ app.post("/sensei/login", (req, res) => {
   });
 });
 
-app.get("/sensei/dashboard", (req, res) => {
+app.get("/sensei/dashboard", async (req, res) => {
   if (req.session.isSensei) {
-    res.render("sensei/dashboard.ejs");
+    console.log(req.session.user);
+    const response = await fetch(
+      `http://localhost:3024/sensei/dashboard/${req.session.user.uid}/all-class`
+    );
+    const body = await response.json();
+    console.log(body);
+    res.render("sensei/dashboard.ejs", {
+      list: body,
+    });
   } else {
     res.redirect("/");
   }
 });
 
-app.get("/sensei/dashboard/add-class", (req, res) => {
+app.get("/sensei/dashboard/add-class", async (req, res) => {
   res.render("sensei/add-class.ejs", {
     user: req.session.user,
   });
@@ -339,8 +352,8 @@ app.get("/sensei/dashboard/:classid/add-lesson", (req, res) => {
     classid: req.params.classid,
   });
 });
-app.get("/sensei/dashboard/all-class", async (req, res) => {
-  let query = `SELECT * FROM class WHERE teacherId = ${req.session.user.uid}`;
+app.get("/sensei/dashboard/:uid/all-class", async (req, res) => {
+  let query = `SELECT * FROM class WHERE teacherId = ${req.params.uid}`;
   await db.query(query, (err, resu) => {
     if (err) {
       res.redirect("/sensei/dashboard");
@@ -350,7 +363,6 @@ app.get("/sensei/dashboard/all-class", async (req, res) => {
   });
 });
 app.post("/sensei/dashboard/add-class", storehtml, upload, (req, res) => {
-  console.log("kkjk");
   const { uid, name, title, quil, banner, thumb, slug } = req.body;
   const insertQuery = `
     INSERT INTO class (teacherId, name, title, slug, syllabus, banner, thumbnail) 
